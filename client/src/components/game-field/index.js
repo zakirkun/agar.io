@@ -1,0 +1,1 @@
+export {default as GameField} from "./game-field";

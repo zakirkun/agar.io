@@ -1,0 +1,48 @@
+.canvas {
+    background-color: #020202;
+}
+
+.leaderboard {
+    background-color: #212121;
+    border-radius: 10px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    opacity: 0.8;
+    padding: 15px 20px;
+}
+
+.leaderboardTitle {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 1.6rem;
+    text-align: left;
+    border-bottom: 1px solid #666666;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.leadersList {
+    display: flex;
+    flex-direction: column;
+}
+
+.leader {
+    padding: 5px 0;
+}
+
+.leaderNumber {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+    margin-right: 5px;
+}
+
+.leaderName {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+}

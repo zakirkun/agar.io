@@ -1,0 +1,99 @@
+.modal {
+    max-width: 475px;
+    width: 100%;
+    background-color: #212121;
+    border-radius: 10px;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.modalHeader {
+    border-bottom: 1px solid #666666;
+    padding: 15px;
+}
+
+.modalTitle {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 2.8rem;
+    text-align: center;
+}
+
+.modalBody {
+    border-bottom: 1px solid #666666;
+    padding: 20px 30px;
+}
+
+.modalFooter {
+    padding: 25px 15px 30px 15px;
+}
+
+.modalLabel {
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+}
+
+.modalList {
+    padding-left: 25px;
+    margin-top: 10px;
+}
+
+.modalItem {
+    color: #FFFFFF;
+    font-size: 1.4rem;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+}
+
+.bodyTitle {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 2.2rem;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.bodyMenu {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.bodyItem {
+    width: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 20px;
+}
+
+.bodyButton {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.8rem;
+    width: 100%;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    padding: 10px;
+}
+
+.bodyButtonTeam {
+    background-color: #00D300;
+}
+
+.bodyButtonSolo {
+    background-color: #00D4D7;
+}
+
+.bodyButtonStats {
+    background-color: #DE00DE;
+}

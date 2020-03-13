@@ -1,0 +1,92 @@
+.modal {
+    max-width: 475px;
+    width: 100%;
+    background-color: #212121;
+    border-radius: 10px;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.modalHeader {
+    border-bottom: 1px solid #666666;
+    padding: 15px;
+}
+
+.modalTitle {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-size: 2.8rem;
+    text-align: center;
+}
+
+.modalBody {
+    border-bottom: 1px solid #666666;
+    padding: 20px 30px;
+}
+
+.modalFooter {
+    padding: 25px 15px 30px 15px;
+}
+
+.modalLabel {
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+}
+
+.modalList {
+    padding-left: 25px;
+    margin-top: 10px;
+}
+
+.modalItem {
+    color: #FFFFFF;
+    font-size: 1.4rem;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+}
+
+.modalMenu {
+    display: flex;
+    flex-direction: column;
+}
+
+.modalButton {
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px 0;
+    margin-bottom: 15px;
+}
+
+.modalButtonGithub {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+    background-color: #414141;
+}
+
+.modalButtonGuest {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+    background-color: #4DE854;
+}
+
+.modalInput {
+    color: #666666;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.2rem;
+    border: 1px solid #666666;
+    border-radius: 5px;
+    padding: 10px;
+    outline: none;
+}
