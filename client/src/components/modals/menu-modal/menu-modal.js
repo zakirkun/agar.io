@@ -9,11 +9,11 @@ const MenuModal = (props) => {
     const {modal, modalHeader, modalBody, modalTitle, modalFooter, modalLabel, modalList, modalItem, bodyTitle, bodyItem,
         bodyMenu, bodyButton, bodyButtonTeam, bodyButtonSolo, bodyButtonStats} = styles;
 
-    const {name, isMenuModalOpen, openGameField, closeMenuModal} = props;
+    const {player, isMenuModalOpen, openGameField, closeMenuModal} = props;
 
     if (!isMenuModalOpen) return null;
 
-    const onSoloButton = (event) => {
+    const onSoloButton = () => {
         openGameField();
         closeMenuModal();
     };
@@ -25,7 +25,7 @@ const MenuModal = (props) => {
             </div>
 
             <div className={modalBody}>
-                <h5 className={bodyTitle}>Hello, {name}!</h5>
+                <h5 className={bodyTitle}>Hello, {player.name && player.name}!</h5>
 
                 <div className={bodyMenu}>
                     <div className={bodyItem}><button className={`${bodyButton} ${bodyButtonTeam}`}>Join team!</button></div>
@@ -51,7 +51,7 @@ const MenuModal = (props) => {
 };
 
 const mapStateToProps = (state) => ({
-    name: state.userState.name,
+    player: state.playerState.player,
     isMenuModalOpen: state.windowState.isMenuModalOpen
 });
 

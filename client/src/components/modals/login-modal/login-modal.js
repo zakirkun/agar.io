@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {connect} from "react-redux";
 
-import {loginUser} from "../../../actions/user.action";
+import {loginPlayer} from "../../../actions/player.action";
 import {closeLoginModal} from "../../../actions/window.action";
 import {openMenuModal} from "../../../actions/window.action";
 import styles from "./login-modal.module.css";
@@ -10,7 +10,7 @@ const LoginModal = (props) => {
     const {modal, modalHeader, modalBody, modalTitle, modalFooter, modalLabel, modalList, modalItem,
         modalButtonGithub, modalButtonGuest, modalInput, modalButton, modalMenu} = styles;
 
-    const {isLoginModalOpen, loginUser, closeLoginModal, openMenuModal} = props;
+    const {isLoginModalOpen, loginPlayer, closeLoginModal, openMenuModal} = props;
 
     const [name, setName] = useState("");
 
@@ -23,7 +23,7 @@ const LoginModal = (props) => {
 
         if (!name) return;
 
-        loginUser({name});
+        loginPlayer({name});
         closeLoginModal();
         openMenuModal();
     };
@@ -62,7 +62,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch) => ({
-    loginUser: (payload) => dispatch(loginUser(payload)),
+    loginPlayer: (payload) => dispatch(loginPlayer(payload)),
     closeLoginModal: () => dispatch(closeLoginModal()),
     openMenuModal: () => dispatch(openMenuModal())
 });

@@ -1,77 +1,105 @@
 import React, {useEffect, useRef, useState} from "react";
 import {connect} from "react-redux";
 
-import {socket} from "../../utils/socketConnection";
 import styles from "./game-field.module.css";
-import {receiveGameLeaderboard} from "../../actions/game.action";
+import {modifyLocationY, modifyLocationX, setLocation} from "../../actions/player.action";
+import {PLAYER_SPEED} from "../../constants";
 
 const GameField = (props) => {
     const {leaderboard, messageBlock, leadersList, leader, leaderNumber, leaderName, canvas, leaderboardTitle, leaderboardHeader} = styles;
-    const {isGameFieldOpen} = props;
 
-    const [isWindowResizeHandlerSet, setIsWindowResizeHandlerSet] = useState(false);
-    const [isDrawingRunning, setIsDrawingRunning] = useState(false);
+    const canvasRef = useRef(null);
 
-    const canvasRef = useRef();
-
-    const randomX = Math.floor(500 * Math.random() + 10);
-    const randomY = Math.floor(500 * Math.random() + 10);
-
-    function draw(canvasCtx) {
-        canvasCtx.beginPath();
-        canvasCtx.fillStyle = "rgb(255, 0, 0)";
-        canvasCtx.arc(randomX, randomY, 10, 0, Math.PI * 2);
-        canvasCtx.fill();
-        canvasCtx.lineWidth = 3;
-        canvasCtx.strokeStyle = "rgb(0, 255, 0)";
-        canvasCtx.stroke();
-
-        requestAnimationFrame(() => draw(canvasCtx));
-
-        setIsDrawingRunning(true);
-    }
-
-    // canvas size change
-    useEffect(() => {
-        if (!isGameFieldOpen) return;
-
+    function initCanvas() {
         const canvasElement = canvasRef.current;
 
-        canvasElement.width = document.documentElement.clientWidth;
-        canvasElement.height = document.documentElement.clientHeight;
+        if (!canvasElement) return;
 
-        if (!isWindowResizeHandlerSet) {
-            window.addEventListener("resize", () => {
-                canvasElement.width = document.documentElement.clientWidth;
-                canvasElement.height = document.documentElement.clientHeight;
-            });
-
-            setIsWindowResizeHandlerSet(true);
-        }
-    }, [isGameFieldOpen]);
-
-    // drawing canvas
-    useEffect(() => {
-        if (!isGameFieldOpen) return;
-
-        const canvasElement = canvasRef.current;
         const canvasCtx = canvasElement.getContext("2d");
 
-        if (!isDrawingRunning) draw(canvasCtx);
-    }, [isGameFieldOpen]);
-
-    // socket events
-    useEffect(() => {
-        if (!isGameFieldOpen) return;
-
-        socket.on("SERVER:LEADERBOARD", receiveGameLeaderboard);
-
-        return () => {
-            socket.off("SERVER:LEADERBOARD", receiveGameLeaderboard);
+        const player = {
+            locationX: Math.floor(Math.random() * 500 + 10),
+            locationY: Math.floor(Math.random() * 500 + 10),
+            vectorX: 0,
+            vectorY: 0
         };
-    }, [isGameFieldOpen]);
 
-    if (!isGameFieldOpen) return null;
+        let {locationX, locationY} = player;
+
+        function drawPlayer() {
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+            const camX = -locationX + canvasElement.width / 2;
+            const camY = -locationY + canvasElement.height / 2;
+
+            canvasCtx.translate(camX, camY);
+
+            canvasCtx.beginPath();
+
+            canvasCtx.fillStyle = "rgb(255, 0, 0)";
+            canvasCtx.arc(locationX, locationY, 10, 0, Math.PI * 2);
+            canvasCtx.arc(200, 200, 10, 0, Math.PI * 2);
+            canvasCtx.fill();
+
+            canvasCtx.lineWidth = 3;
+            canvasCtx.strokeStyle = "rgb(0, 255, 0)";
+            canvasCtx.stroke();
+
+            requestAnimationFrame(drawPlayer);
+        }
+
+        drawPlayer();
+
+        let vectorX, vectorY;
+
+        canvasElement.addEventListener("mousemove", (event) => {
+            const {clientX: x, clientY: y} = event;
+
+            const angleDegree = Math.atan2(y - (canvasElement.width / 2), x - (canvasElement.height / 2)) * 180 / Math.PI;
+
+            if (angleDegree >= 0 && angleDegree < 90) {
+                vectorX = 1 - (angleDegree / 90);
+                vectorY = -(angleDegree / 90);
+            } else if (angleDegree >= 90 && angleDegree <= 180) {
+                vectorX = -(angleDegree - 90) / 90;
+                vectorY = -(1 - ((angleDegree - 90) / 90));
+            } else if (angleDegree >= -180 && angleDegree < -90) {
+                vectorX = (angleDegree + 90) / 90;
+                vectorY = (1 + ((angleDegree + 90) / 90));
+            } else if (angleDegree < 0 && angleDegree >= -90) {
+                vectorX = (angleDegree + 90) / 90;
+                vectorY = (1 - ((angleDegree + 90) / 90));
+            }
+
+            if ((locationX < 5 && vectorX < 0) || (locationX > 500) && (vectorX > 0)) {
+                locationY -= PLAYER_SPEED * vectorY;
+            } else if ((locationY < 5 && vectorY > 0) || (locationY > 500) && (vectorY < 0)) {
+                locationX += PLAYER_SPEED * vectorX;
+            } else {
+                locationX += PLAYER_SPEED * vectorX;
+                locationY -= PLAYER_SPEED * vectorY;
+            }
+        });
+    }
+
+    useEffect(() => {
+        const setCanvasSize = () => {
+            const canvasElement = canvasRef.current;
+
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        };
+
+        setCanvasSize();
+
+        window.addEventListener("resize", setCanvasSize);
+    }, []);
+
+    useEffect(() => {
+        initCanvas();
+    }, []);
 
     return (
         <>
@@ -110,7 +138,12 @@ const GameField = (props) => {
 };
 
 const mapStateToProps = (state) => ({
-    isGameFieldOpen: state.windowState.isGameFieldOpen
+    isGameFieldOpen: state.windowState.isGameFieldOpen,
+    player: state.playerState.player
 });
 
-export default connect(mapStateToProps, null)(GameField);
+const mapDispatchToProps = (dispatch) => ({
+
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(GameField);
