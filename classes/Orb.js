@@ -5,7 +5,7 @@ class Orb {
         this.locationX = Math.floor(Math.random() * options.worldWidth);
         this.locationY = Math.floor(Math.random() * options.worldHeight);
 
-        this.radius = 5;
+        this.radius = 10;
     }
 
     getRandomColor() {

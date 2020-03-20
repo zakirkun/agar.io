@@ -1,15 +1,16 @@
 import React, {useEffect, useRef} from "react";
 import {connect} from "react-redux";
+import {v4} from "uuid";
 
 import styles from "./game-field.module.css";
 import {socket} from "../../utils/socketConnection";
 import {FPS} from "../../constants";
 
-const player = {};
-let players = [];
-let orbs = [];
-
-let vectorX = 0, vectorY = 0;
+let players = [],
+    orbs = [],
+    vectorX = 0,
+    vectorY = 0,
+    playerId;
 
 const GameField = (props) => {
     const {leaderboard, messageBlock, leadersList, leader, leaderNumber, leaderName, canvas, leaderboardTitle, leaderboardHeader} = styles;
@@ -17,20 +18,21 @@ const GameField = (props) => {
 
     const canvasRef = useRef(null);
 
-    // canvas draw
     function draw(canvas) {
         const ctx = canvas.getContext("2d");
 
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
 
+        const player = players.find((player) => player.id === playerId) || {};
+
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        const camX = -player.locationX + canvasWidth / 2;
-        const camY = -player.locationY + canvasHeight / 2;
+        const cameraX = -player.locationX + canvasWidth / 2;
+        const cameraY = -player.locationY + canvasHeight / 2;
 
-        ctx.translate(camX, camY);
+        ctx.translate(cameraX, cameraY);
 
         players.forEach((player) => {
             ctx.beginPath();
@@ -39,8 +41,8 @@ const GameField = (props) => {
             ctx.arc(player.locationX, player.locationY, player.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "rgb(0,255,0)";
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = "rgb(0, 255, 0)";
             ctx.stroke();
         });
 
@@ -55,7 +57,6 @@ const GameField = (props) => {
         requestAnimationFrame(() => draw(canvas));
     }
 
-    // mouse logic
     function onCanvasMouseMove(event) {
         const {clientX: x, clientY: y} = event;
         const canvas = event.currentTarget;
@@ -67,32 +68,26 @@ const GameField = (props) => {
         const angleDeg = Math.atan2(y - (canvas.height / 2), x - (canvas.width / 2)) * 180 / Math.PI;
 
         if (angleDeg >= 0 && angleDeg < 90) {
-            // console.log("Mouse is in the lower right quad")
             vectorX = 1 - (angleDeg / 90);
             vectorY = -(angleDeg / 90);
         } else if (angleDeg >= 90 && angleDeg <= 180) {
-            // console.log("Mouse is in the lower left quad")
             vectorX = -(angleDeg - 90) / 90;
             vectorY = -(1 - ((angleDeg - 90) / 90));
         } else if (angleDeg >= -180 && angleDeg < -90) {
-            // console.log("Mouse is in the upper left quad")
             vectorX = (angleDeg + 90) / 90;
             vectorY = (1 + ((angleDeg + 90) / 90));
         } else if (angleDeg < 0 && angleDeg >= -90) {
-            // console.log("Mouse is in the upper right quad")
             vectorX = (angleDeg + 90) / 90;
             vectorY = (1 - ((angleDeg + 90) / 90));
         }
     }
 
-    // draw canvas effect
     useEffect(() => {
         const canvas = canvasRef.current;
 
         draw(canvas);
     }, []);
 
-    // canvas size effect
     useEffect(() => {
         const canvas = canvasRef.current;
 
@@ -106,7 +101,6 @@ const GameField = (props) => {
         window.addEventListener("resize", setCanvasSize);
     }, []);
 
-    // set initial locations effect
     useEffect(() => {
         const canvas = canvasRef.current;
 
@@ -116,26 +110,20 @@ const GameField = (props) => {
         setVectors(canvas, x, y);
     }, []);
 
-    // socket logic effect
     useEffect(() => {
-        socket.on("SERVER:ORBS", ({orbs: orbsArray}) => {
-            orbs = orbsArray;
-        });
+        playerId = v4();
 
-        socket.on("SERVER:PLAYER_LOCATION", ({locationX, locationY}) => {
-            player.locationX = locationX;
-            player.locationY = locationY;
-        });
+        socket.on("SERVER:ORBS", ({orbs: orbsArray}) => orbs = orbsArray);
 
-        socket.on("SERVER:TOCK", ({players: playersArray}) => {
-            players = playersArray;
-        });
+        socket.on("SERVER:TOCK", ({players: playersArray}) => players = playersArray);
 
-        socket.emit("CLIENT:JOIN_GAME", {playerName});
+        socket.emit("CLIENT:JOIN_GAME", {playerName, id: playerId});
 
-        setInterval(() => {
-            socket.emit("CLIENT:TICK", {vectorX, vectorY});
-        }, FPS);
+        const intervalTick = setInterval(() => socket.emit("CLIENT:TICK", {vectorX, vectorY}), FPS);
+
+        return () => {
+            clearInterval(intervalTick);
+        };
     }, []);
 
     return (

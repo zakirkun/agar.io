@@ -8,14 +8,14 @@ const players = [];
 
 const settings = {
     orbsNumber: 500,
-    size: 5,
-    speed: 15,
+    size: 10,
+    speed: 7,
     zoom: 1.5,
     worldWidth: 5000,
     worldHeight: 5000
 };
 
-const FPS = 1000 / 30;
+const FPS = 1000 / 60;
 
 const {orbsNumber, size, speed, zoom, worldWidth, worldHeight} = settings;
 
@@ -31,21 +31,15 @@ module.exports = (io) => {
     }, FPS);
 
     io.sockets.on("connection", (socket) => {
-        let intervalPlayerLocation;
-
-        socket.on("CLIENT:JOIN_GAME", ({playerName}) => {
+        socket.on("CLIENT:JOIN_GAME", ({playerName, id}) => {
             socket.join("game");
 
             const playerConfig = new PlayerConfig({speed, zoom});
-            const playerData = new PlayerData(playerName, {size, worldWidth, worldHeight});
+            const playerData = new PlayerData(playerName, id, {size, worldWidth, worldHeight});
 
             player = new Player(socket.id, playerConfig, playerData);
 
             players.push(player);
-
-            intervalPlayerLocation = setInterval(() => {
-                socket.emit("SERVER:PLAYER_LOCATION", {locationX: player.data.locationX, locationY: player.data.locationY});
-            }, FPS);
 
             socket.emit("SERVER:ORBS", {orbs});
         });
@@ -59,19 +53,31 @@ module.exports = (io) => {
 
             if ((locationX < 5 && vectorX < 0) || (locationX > worldWidth) && (vectorX > 0)) {
                 player.data.locationY -= speed * vectorY;
+
+                setMinimalAndMaximalLocation();
             } else if ((locationY < 5 && vectorY > 0) || (locationY > worldHeight) && (vectorY < 0)) {
                 player.data.locationX += speed * vectorX;
+
+                setMinimalAndMaximalLocation();
             } else {
                 player.data.locationX += speed * vectorX;
                 player.data.locationY -= speed * vectorY;
+
+                setMinimalAndMaximalLocation();
             }
         });
 
         socket.on("disconnect", () => {
-            clearInterval(intervalPlayerLocation);
-
             socket.leave("game");
         });
+
+        function setMinimalAndMaximalLocation() {
+            if (player.data.locationY < 0) player.data.locationY = 0;
+            if (player.data.locationX < 0) player.data.locationX = 0;
+
+            if (player.data.locationX > worldWidth) player.data.locationX = worldWidth;
+            if (player.data.locationY > worldHeight) player.data.locationY = worldHeight;
+        }
     });
 };
 

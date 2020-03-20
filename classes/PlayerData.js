@@ -1,9 +1,7 @@
-const uuid = require("uuid");
-
 class PlayerData{
-    constructor(name, options){
-        this.id = uuid.v4();
+    constructor(name, id ,options){
         this.name = name;
+        this.id = id;
 
         this.locationX = Math.floor(options.worldWidth * Math.random());
         this.locationY = Math.floor(options.worldHeight * Math.random());
