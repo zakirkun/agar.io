@@ -4,18 +4,21 @@ import {connect} from "react-redux";
 import styles from "./menu-modal.module.css";
 import {openGameField} from "../../../actions/window.action";
 import {closeMenuModal} from "../../../actions/window.action";
+import {setMousePosition} from "../../../actions/player.action";
 
 const MenuModal = (props) => {
     const {modal, modalHeader, modalBody, modalTitle, modalFooter, modalLabel, modalList, modalItem, bodyTitle, bodyItem,
         bodyMenu, bodyButton, bodyButtonTeam, bodyButtonSolo, bodyButtonStats} = styles;
 
-    const {player, isMenuModalOpen, openGameField, closeMenuModal} = props;
+    const {playerName, isMenuModalOpen, openGameField, closeMenuModal, setMousePosition} = props;
 
     if (!isMenuModalOpen) return null;
 
-    const onSoloButton = () => {
+    const onSoloButton = (event) => {
         openGameField();
         closeMenuModal();
+
+        setMousePosition({initialMousePosition: [event.clientX, event.clientY]});
     };
 
     return (
@@ -25,7 +28,7 @@ const MenuModal = (props) => {
             </div>
 
             <div className={modalBody}>
-                <h5 className={bodyTitle}>Hello, {player.name && player.name}!</h5>
+                <h5 className={bodyTitle}>Hello, {playerName}!</h5>
 
                 <div className={bodyMenu}>
                     <div className={bodyItem}><button className={`${bodyButton} ${bodyButtonTeam}`}>Join team!</button></div>
@@ -51,13 +54,14 @@ const MenuModal = (props) => {
 };
 
 const mapStateToProps = (state) => ({
-    player: state.playerState.player,
+    playerName: state.playerState.name,
     isMenuModalOpen: state.windowState.isMenuModalOpen
 });
 
 const mapDispatchToProps = (dispatch) => ({
     openGameField: () => dispatch(openGameField()),
-    closeMenuModal: () => dispatch(closeMenuModal())
+    closeMenuModal: () => dispatch(closeMenuModal()),
+    setMousePosition: (payload) => dispatch(setMousePosition(payload))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(MenuModal);

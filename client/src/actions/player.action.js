@@ -1,23 +1,13 @@
-import {MODIFY_PLAYER_LOCATION_X, MODIFY_PLAYER_LOCATION_Y, PLAYER_LOGIN, SET_PLAYER_LOCATION} from "./types";
+import {PLAYER_LOGIN, SET_MOUSE_POSITION} from "./types";
 
 const loginPlayer = (payload) => ({
     type: PLAYER_LOGIN,
     payload
 });
 
-const setLocation = (payload) => ({
-    type: SET_PLAYER_LOCATION,
+const setMousePosition = (payload) => ({
+    type: SET_MOUSE_POSITION,
     payload
 });
 
-const modifyLocationX = (payload) => ({
-    type: MODIFY_PLAYER_LOCATION_X,
-    payload
-});
-
-const modifyLocationY = (payload) => ({
-    type: MODIFY_PLAYER_LOCATION_Y,
-    payload
-});
-
-export {loginPlayer, setLocation, modifyLocationX, modifyLocationY};
+export {loginPlayer, setMousePosition};

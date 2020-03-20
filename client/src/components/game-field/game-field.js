@@ -1,109 +1,146 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef} from "react";
 import {connect} from "react-redux";
 
 import styles from "./game-field.module.css";
-import {modifyLocationY, modifyLocationX, setLocation} from "../../actions/player.action";
-import {PLAYER_SPEED} from "../../constants";
+import {socket} from "../../utils/socketConnection";
+import {FPS} from "../../constants";
+
+const player = {};
+let players = [];
+let orbs = [];
+
+let vectorX = 0, vectorY = 0;
 
 const GameField = (props) => {
     const {leaderboard, messageBlock, leadersList, leader, leaderNumber, leaderName, canvas, leaderboardTitle, leaderboardHeader} = styles;
+    const {playerName, initialMousePosition} = props;
 
     const canvasRef = useRef(null);
 
-    function initCanvas() {
-        const canvasElement = canvasRef.current;
+    // canvas draw
+    function draw(canvas) {
+        const ctx = canvas.getContext("2d");
 
-        if (!canvasElement) return;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
 
-        const canvasCtx = canvasElement.getContext("2d");
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        const player = {
-            locationX: Math.floor(Math.random() * 500 + 10),
-            locationY: Math.floor(Math.random() * 500 + 10),
-            vectorX: 0,
-            vectorY: 0
-        };
+        const camX = -player.locationX + canvasWidth / 2;
+        const camY = -player.locationY + canvasHeight / 2;
 
-        let {locationX, locationY} = player;
+        ctx.translate(camX, camY);
 
-        function drawPlayer() {
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        players.forEach((player) => {
+            ctx.beginPath();
 
-            canvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = player.color;
+            ctx.arc(player.locationX, player.locationY, player.radius, 0, Math.PI * 2);
+            ctx.fill();
 
-            const camX = -locationX + canvasElement.width / 2;
-            const camY = -locationY + canvasElement.height / 2;
-
-            canvasCtx.translate(camX, camY);
-
-            canvasCtx.beginPath();
-
-            canvasCtx.fillStyle = "rgb(255, 0, 0)";
-            canvasCtx.arc(locationX, locationY, 10, 0, Math.PI * 2);
-            canvasCtx.arc(200, 200, 10, 0, Math.PI * 2);
-            canvasCtx.fill();
-
-            canvasCtx.lineWidth = 3;
-            canvasCtx.strokeStyle = "rgb(0, 255, 0)";
-            canvasCtx.stroke();
-
-            requestAnimationFrame(drawPlayer);
-        }
-
-        drawPlayer();
-
-        let vectorX, vectorY;
-
-        canvasElement.addEventListener("mousemove", (event) => {
-            const {clientX: x, clientY: y} = event;
-
-            const angleDegree = Math.atan2(y - (canvasElement.width / 2), x - (canvasElement.height / 2)) * 180 / Math.PI;
-
-            if (angleDegree >= 0 && angleDegree < 90) {
-                vectorX = 1 - (angleDegree / 90);
-                vectorY = -(angleDegree / 90);
-            } else if (angleDegree >= 90 && angleDegree <= 180) {
-                vectorX = -(angleDegree - 90) / 90;
-                vectorY = -(1 - ((angleDegree - 90) / 90));
-            } else if (angleDegree >= -180 && angleDegree < -90) {
-                vectorX = (angleDegree + 90) / 90;
-                vectorY = (1 + ((angleDegree + 90) / 90));
-            } else if (angleDegree < 0 && angleDegree >= -90) {
-                vectorX = (angleDegree + 90) / 90;
-                vectorY = (1 - ((angleDegree + 90) / 90));
-            }
-
-            if ((locationX < 5 && vectorX < 0) || (locationX > 500) && (vectorX > 0)) {
-                locationY -= PLAYER_SPEED * vectorY;
-            } else if ((locationY < 5 && vectorY > 0) || (locationY > 500) && (vectorY < 0)) {
-                locationX += PLAYER_SPEED * vectorX;
-            } else {
-                locationX += PLAYER_SPEED * vectorX;
-                locationY -= PLAYER_SPEED * vectorY;
-            }
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgb(0,255,0)";
+            ctx.stroke();
         });
+
+        orbs.forEach((orb) => {
+            ctx.beginPath();
+
+            ctx.fillStyle = orb.color;
+            ctx.arc(orb.locationX, orb.locationY, orb.radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        requestAnimationFrame(() => draw(canvas));
     }
 
-    useEffect(() => {
-        const setCanvasSize = () => {
-            const canvasElement = canvasRef.current;
+    // mouse logic
+    function onCanvasMouseMove(event) {
+        const {clientX: x, clientY: y} = event;
+        const canvas = event.currentTarget;
 
-            canvasElement.width = window.innerWidth;
-            canvasElement.height = window.innerHeight;
-        };
+        setVectors(canvas, x, y);
+    }
+
+    function setVectors(canvas, x, y) {
+        const angleDeg = Math.atan2(y - (canvas.height / 2), x - (canvas.width / 2)) * 180 / Math.PI;
+
+        if (angleDeg >= 0 && angleDeg < 90) {
+            // console.log("Mouse is in the lower right quad")
+            vectorX = 1 - (angleDeg / 90);
+            vectorY = -(angleDeg / 90);
+        } else if (angleDeg >= 90 && angleDeg <= 180) {
+            // console.log("Mouse is in the lower left quad")
+            vectorX = -(angleDeg - 90) / 90;
+            vectorY = -(1 - ((angleDeg - 90) / 90));
+        } else if (angleDeg >= -180 && angleDeg < -90) {
+            // console.log("Mouse is in the upper left quad")
+            vectorX = (angleDeg + 90) / 90;
+            vectorY = (1 + ((angleDeg + 90) / 90));
+        } else if (angleDeg < 0 && angleDeg >= -90) {
+            // console.log("Mouse is in the upper right quad")
+            vectorX = (angleDeg + 90) / 90;
+            vectorY = (1 - ((angleDeg + 90) / 90));
+        }
+    }
+
+    // draw canvas effect
+    useEffect(() => {
+        const canvas = canvasRef.current;
+
+        draw(canvas);
+    }, []);
+
+    // canvas size effect
+    useEffect(() => {
+        const canvas = canvasRef.current;
+
+        function setCanvasSize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
 
         setCanvasSize();
 
         window.addEventListener("resize", setCanvasSize);
     }, []);
 
+    // set initial locations effect
     useEffect(() => {
-        initCanvas();
+        const canvas = canvasRef.current;
+
+        const x = initialMousePosition[0];
+        const y = initialMousePosition[1];
+
+        setVectors(canvas, x, y);
+    }, []);
+
+    // socket logic effect
+    useEffect(() => {
+        socket.on("SERVER:ORBS", ({orbs: orbsArray}) => {
+            orbs = orbsArray;
+        });
+
+        socket.on("SERVER:PLAYER_LOCATION", ({locationX, locationY}) => {
+            player.locationX = locationX;
+            player.locationY = locationY;
+        });
+
+        socket.on("SERVER:TOCK", ({players: playersArray}) => {
+            players = playersArray;
+        });
+
+        socket.emit("CLIENT:JOIN_GAME", {playerName});
+
+        setInterval(() => {
+            socket.emit("CLIENT:TICK", {vectorX, vectorY});
+        }, FPS);
     }, []);
 
     return (
         <>
-            <canvas ref={canvasRef} className={canvas} />
+            <canvas ref={canvasRef} className={canvas} onMouseMove={onCanvasMouseMove} />
 
             <div className={leaderboard}>
                 <div className={leaderboardHeader}>
@@ -138,12 +175,8 @@ const GameField = (props) => {
 };
 
 const mapStateToProps = (state) => ({
-    isGameFieldOpen: state.windowState.isGameFieldOpen,
-    player: state.playerState.player
+    initialMousePosition: state.playerState.initialMousePosition,
+    playerName: state.playerState.name
 });
 
-const mapDispatchToProps = (dispatch) => ({
-
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(GameField);
+export default connect(mapStateToProps, null)(GameField);

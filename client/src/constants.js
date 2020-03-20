@@ -1,3 +1,3 @@
-const PLAYER_SPEED = 10;
+const FPS = 1000 / 30;
 
-export {PLAYER_SPEED};
+export {FPS};
