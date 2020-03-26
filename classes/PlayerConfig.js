@@ -1,7 +1,5 @@
 class PlayerConfig{
-    constructor(options){
-        this.xVector = 0;
-        this.yVector = 0;
+    constructor(options) {
         this.speed = options.speed;
         this.zoom = options.zoom;
     }
