@@ -1,8 +1,9 @@
-import {PLAYER_LOGIN, SET_MOUSE_POSITION} from "../actions/types";
+import {PLAYER_LOGIN, SET_GAME_RESULT, SET_MOUSE_POSITION} from "../actions/types";
 
 const initialState = {
     name: null,
-    initialMousePosition: []
+    initialMousePosition: [],
+    gameResult: null
 };
 
 const playerReducer = (state = initialState, action) => {
@@ -19,6 +20,12 @@ const playerReducer = (state = initialState, action) => {
             return {
                 ...state,
                 initialMousePosition: payload.initialMousePosition
+            };
+
+        case SET_GAME_RESULT:
+            return {
+                ...state,
+                gameResult: payload.gameResult
             };
 
         default:

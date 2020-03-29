@@ -97,3 +97,20 @@
 .bodyButtonStats {
     background-color: #DE00DE;
 }
+
+.gameResult {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #666666;
+    border-bottom: 1px solid #666666;
+    padding: 15px 0;
+}
+
+.resultItem {
+    color: #FFFFFF;
+    font-family: "Roboto", sans-serif;
+    font-weight: 400;
+    font-size: 1.8rem;
+    text-align: center;
+}

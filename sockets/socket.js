@@ -5,110 +5,134 @@ const Player = require("../classes/Player");
 const {checkForOrbCollisions, checkForPlayerCollisions} = require("../utils/checkCollisions");
 
 const settings = {
-    orbsNumber: 50,
+    orbsNumber: 5000,
     size: 10,
     speed: 7,
     zoom: 1.5,
-    worldWidth: 500,
-    worldHeight: 500
+    worldWidth: 5000,
+    worldHeight: 5000
 };
 
 const {orbsNumber, size, speed, zoom, worldWidth, worldHeight} = settings;
 
-const orbs = [], FPS = 1000 / 60;
+let
+    orbs = [],
+    playersData = [],
+    players = [],
+    FPS = 1000 / 60;
 
 initGame();
 
 module.exports = (io) => {
-    let playersData = [], players = [];
-
     setInterval(() => {
         io.to("game").emit("SERVER:PLAYERS", {players: playersData});
     }, FPS);
 
     io.sockets.on("connection", (socket) => {
-        let player = socket.player = null;
-        let playerData = socket.playerData = {};
-        let playerConfig = socket.playerConfig = {};
-        let intervalPlayerData = socket.intervalPlayerData = null;
-        let playerDataIdx = socket.playerDataIdx = null;
-        let playerIdx = socket.playerIdx = null;
+        socket.player = {};
+        socket.playerData = {};
+        socket.playerConfig = {};
 
-        socket.on("CLIENT:JOIN_GAME", ({playerName, id}) => {
-            playerConfig = new PlayerConfig({speed, zoom});
-            playerData = new PlayerData(playerName, id, {size, worldWidth, worldHeight});
+        socket.on("CLIENT:JOIN_GAME", ({playerName, id: clientId}) => {
+            socket.playerConfig = new PlayerConfig({speed, zoom});
+            socket.playerData = new PlayerData(playerName, clientId, socket.id, {size, worldWidth, worldHeight});
+            socket.player = new Player(socket.id, socket.playerConfig, socket.playerData);
 
-            player = new Player(socket.id, playerConfig, playerData);
+            players.push(socket.player);
+            playersData.push(socket.player.data);
 
-            players.push(player);
-            playersData.push(player.data);
-
-            playerDataIdx = playersData.indexOf(player.data);
-            playerIdx = players.indexOf(player);
+            const leaderboard = getLeaderboard(playersData);
 
             socket.join("game");
 
-            intervalPlayerData = setInterval(() => {
-                socket.emit("SERVER:PLAYER_DATA", {playerData});
-            }, FPS);
-
             socket.emit("SERVER:ORBS", {orbs});
+            socket.emit("SERVER:LEADERBOARD", {leaderboard});
+
+            socket.intervalPlayerData = setInterval(() => {
+                socket.emit("SERVER:PLAYER_DATA", {player: socket.playerData});
+            }, FPS);
         });
 
         socket.on("CLIENT:VECTORS", ({vectorX, vectorY}) => {
-            if (!player) return;
-
-            const {speed} = playerConfig;
-
-            let {locationX, locationY} = playerData;
+            let
+                {playerData, playerConfig} = socket,
+                {speed = settings.speed} = playerConfig,
+                {locationX, locationY} = playerData;
 
             if ((locationX < 5 && vectorX < 0) || (locationX > worldWidth) && (vectorX > 0)) {
                 playerData.locationY -= speed * vectorY;
-
-                setMinimalAndMaximalLocation();
             } else if ((locationY < 5 && vectorY > 0) || (locationY > worldHeight) && (vectorY < 0)) {
                 playerData.locationX += speed * vectorX;
-
-                setMinimalAndMaximalLocation();
             } else {
                 playerData.locationX += speed * vectorX;
                 playerData.locationY -= speed * vectorY;
-
-                setMinimalAndMaximalLocation();
             }
+
+            setMinimalAndMaximalLocation();
 
             checkForOrbCollisions(playerData, playerConfig, orbs, {worldWidth, worldHeight})
                 .then((res) => {
-                    const orb = orbs[res];
+                    const
+                        orb = orbs[res],
+                        leaderboard = getLeaderboard(playersData);
 
                     io.to("game").emit("SERVER:ORBS_UPDATE", {newOrb: orb, idx: res});
+                    io.to("game").emit("SERVER:LEADERBOARD_UPDATE", {leaderboard});
                 })
-                .catch((error) => {});
+                .catch(() => {});
 
-            checkForPlayerCollisions(playerData, playerConfig, playersData)
+            checkForPlayerCollisions(playerData, playerConfig, playersData, (killedPlayerData) => {
+                const socket = io.of("/").connected[killedPlayerData.socketId];
+
+                logout(socket);
+            })
                 .then((res) => {
-                    console.log("Player collision");
+                    socket.emit("SERVER:PLAYER_DEATH", res);
                 })
                 .catch(() => {});
         });
 
-        socket.on("disconnect", () => {
-            socket.leave("game");
-
-            clearInterval(intervalPlayerData);
-
-            playersData.splice(playerDataIdx, 1);
-            players.splice(playerIdx, 1);
+        socket.on("CLIENT:LEAVE_GAME", () => {
+            if (checkIfIsClientInGame("game")) logout(socket);
         });
 
         function setMinimalAndMaximalLocation() {
-            const {locationX, locationY} = playerData;
+            const
+                {playerData} = socket,
+                {locationX, locationY} = playerData;
 
             if (locationY < 0) playerData.locationY = 0;
             if (locationX < 0) playerData.locationX = 0;
 
             if (locationX > worldWidth) playerData.locationX = worldWidth;
             if (locationY > worldHeight) playerData.locationY = worldHeight;
+        }
+
+        function getLeaderboard(playersData) {
+            return playersData.map((player) => ({id: player.id, name: player.name, score: player.score}))
+                .sort((a, b) => b.score - a.score);
+        }
+
+        function logout(socket) {
+            const {intervalPlayerData} = socket;
+
+            socket.leave("game");
+
+            clearInterval(intervalPlayerData);
+
+            const playerDataIdx = playersData.findIndex((playerData) => playerData.id === socket.playerData.id);
+            const playerIdx = players.findIndex((player) => player.id === socket.player.id);
+
+            playersData.splice(playerDataIdx, 1);
+            players.splice(playerIdx, 1);
+
+            io.to("game").emit("SERVER:LEADERBOARD_UPDATE", {leaderboard: getLeaderboard(playersData)});
+
+            socket.emit("SERVER:LEAVE_GAME", {playerData: socket.playerData});
+        }
+
+        function checkIfIsClientInGame(roomName) {
+            return io.sockets.adapter.sids[socket.id][roomName];
         }
     });
 };

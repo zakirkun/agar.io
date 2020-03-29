@@ -1,21 +1,26 @@
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {connect} from "react-redux";
 import {v4} from "uuid";
 
 import styles from "./game-field.module.css";
 import {socket} from "../../utils/socketConnection";
 import {FPS} from "../../constants";
+import {setGameResult} from "../../actions/player.action";
+import {closeGameField, openMenuModal} from "../../actions/window.action";
 
 let players = [],
     orbs = [],
     vectorX = 0,
     vectorY = 0,
     player = {},
-    playerId;
+    playerId,
+    isGameRunning = false;
 
 const GameField = (props) => {
-    const {leaderboard, messageBlock, leadersList, leader, leaderNumber, leaderName, canvas, leaderboardTitle, leaderboardHeader} = styles;
-    const {playerName, initialMousePosition} = props;
+    const {leaderboard: leaderboardStyle, messageBlock, leadersList, leader, leaderNumber, leaderName, canvas, leaderboardTitle, leaderboardHeader, leaderScore} = styles;
+    const {playerName, initialMousePosition, setGameResult, closeGameField, openMenuModal} = props;
+
+    const [leaderboard, setLeaderboard] = useState([]);
 
     const canvasRef = useRef(null);
 
@@ -48,7 +53,7 @@ const GameField = (props) => {
             ctx.fill();
         });
 
-        requestAnimationFrame(() => draw(ctx, canvasWidth, canvasHeight));
+        if (isGameRunning) requestAnimationFrame(() => draw(ctx, canvasWidth, canvasHeight));
     }
 
     function onCanvasMouseMove(event) {
@@ -86,14 +91,24 @@ const GameField = (props) => {
         }
 
         window.addEventListener("resize", setCanvasSize);
+
+        return () => {
+            window.removeEventListener("resize", setCanvasSize);
+        };
     }, []);
 
     useEffect(() => {
+        isGameRunning = true;
+
         const canvas = canvasRef.current;
 
         const ctx = canvas.getContext("2d");
 
         draw(ctx, canvas.width, canvas.height);
+
+        return () => {
+            isGameRunning = false;
+        };
     }, []);
 
     useEffect(() => {
@@ -109,45 +124,60 @@ const GameField = (props) => {
         playerId = v4();
 
         socket.on("SERVER:ORBS", ({orbs: orbsArray}) => orbs = orbsArray);
+        socket.on("SERVER:LEADERBOARD", ({leaderboard}) => setLeaderboard(leaderboard));
         socket.on("SERVER:ORBS_UPDATE", ({newOrb, idx}) => orbs.splice(idx, 1, newOrb));
         socket.on("SERVER:PLAYERS", ({players: playersArray}) => players = playersArray);
-        socket.on("SERVER:PLAYER_DATA", ({playerData}) => player = playerData);
+        socket.on("SERVER:PLAYER_DATA", ({player: playerData}) => player = playerData);
+        socket.on("SERVER:LEADERBOARD_UPDATE", ({leaderboard}) => setLeaderboard(leaderboard));
+        socket.on("SERVER:LEAVE_GAME", ({playerData}) => {
+            setGameResult({gameResult: playerData});
+
+            closeGameField();
+            openMenuModal();
+        });
 
         socket.emit("CLIENT:JOIN_GAME", {playerName, id: playerId});
 
-        const intervalTick = setInterval(() => socket.emit("CLIENT:VECTORS", {vectorX, vectorY}), FPS);
+        const intervalTick = setInterval(() => {
+            socket.emit("CLIENT:VECTORS", {vectorX, vectorY});
+        }, FPS);
 
         return () => {
             clearInterval(intervalTick);
+
+            socket.off("SERVER:ORBS");
+            socket.off("SERVER:LEADERBOARD");
+            socket.off("SERVER:ORBS_UPDATE");
+            socket.off("SERVER:PLAYERS");
+            socket.off("SERVER:PLAYER_DATA");
+            socket.off("SERVER:LEADERBOARD_UPDATE");
+            socket.off("SERVER:LEAVE_GAME");
+
+            socket.emit("CLIENT:LEAVE_GAME");
         };
     }, []);
+
+    const renderLeaderboard = () => (
+        leaderboard.map((player, idx) => (
+            <div className={leader}>
+                <span className={leaderNumber}>{idx + 1}</span>
+                <span className={leaderName}>{player.name}</span>
+                <span className={leaderScore}>{player.score}</span>
+            </div>
+        ))
+    );
 
     return (
         <>
             <canvas ref={canvasRef} className={canvas} onMouseMove={onCanvasMouseMove} width={window.innerWidth} height={window.innerHeight} />
 
-            <div className={leaderboard}>
+            <div className={leaderboardStyle}>
                 <div className={leaderboardHeader}>
                     <h4 className={leaderboardTitle}>Leaderboard</h4>
                 </div>
 
                 <div className={leadersList}>
-                    <div className={leader}>
-                        <span className={leaderNumber}>1.</span>
-                        <span className={leaderName}>Ansat</span>
-                    </div>
-                    <div className={leader}>
-                        <span className={leaderNumber}>2.</span>
-                        <span className={leaderName}>Ansat2</span>
-                    </div>
-                    <div className={leader}>
-                        <span className={leaderNumber}>3.</span>
-                        <span className={leaderName}>Ansat3</span>
-                    </div>
-                    <div className={leader}>
-                        <span className={leaderNumber}>4.</span>
-                        <span className={leaderName}>Ansat4</span>
-                    </div>
+                    {renderLeaderboard()}
                 </div>
             </div>
 
@@ -163,4 +193,10 @@ const mapStateToProps = (state) => ({
     playerName: state.playerState.name
 });
 
-export default connect(mapStateToProps, null)(GameField);
+const mapDispatchToProps = (dispatch) => ({
+    setGameResult: (payload) => dispatch(setGameResult(payload)),
+    closeGameField: () => dispatch(closeGameField()),
+    openMenuModal: () => dispatch(openMenuModal())
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(GameField);

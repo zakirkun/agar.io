@@ -1,4 +1,4 @@
-import {PLAYER_LOGIN, SET_MOUSE_POSITION} from "./types";
+import {PLAYER_LOGIN, SET_GAME_RESULT, SET_MOUSE_POSITION} from "./types";
 
 const loginPlayer = (payload) => ({
     type: PLAYER_LOGIN,
@@ -10,4 +10,9 @@ const setMousePosition = (payload) => ({
     payload
 });
 
-export {loginPlayer, setMousePosition};
+const setGameResult = (payload) => ({
+    type: SET_GAME_RESULT,
+    payload
+});
+
+export {loginPlayer, setMousePosition, setGameResult};

@@ -1,7 +1,8 @@
 class PlayerData{
-    constructor(name, id ,options){
+    constructor(name, id, socketId, options){
         this.name = name;
         this.id = id;
+        this.socketId = socketId;
 
         this.locationX = Math.floor(options.worldWidth * Math.random());
         this.locationY = Math.floor(options.worldHeight * Math.random());
@@ -9,6 +10,8 @@ class PlayerData{
         this.radius = options.size;
         this.color = this.getRandomColor();
         this.score = 0;
+        this.playersAbsorbed = 0;
+        this.orbsAbsorbed = 0;
     }
 
     getRandomColor(){

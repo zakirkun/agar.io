@@ -7,10 +7,12 @@ import {closeMenuModal} from "../../../actions/window.action";
 import {setMousePosition} from "../../../actions/player.action";
 
 const MenuModal = (props) => {
-    const {modal, modalHeader, modalBody, modalTitle, modalFooter, modalLabel, modalList, modalItem, bodyTitle, bodyItem,
-        bodyMenu, bodyButton, bodyButtonTeam, bodyButtonSolo, bodyButtonStats} = styles;
+    const {
+        modal, modalHeader, modalBody, modalTitle, modalFooter, modalLabel, modalList, modalItem, bodyTitle, bodyItem,
+        bodyMenu, bodyButton, bodyButtonTeam, bodyButtonSolo, bodyButtonStats, resultItem
+    } = styles;
 
-    const {playerName, isMenuModalOpen, openGameField, closeMenuModal, setMousePosition} = props;
+    const {playerName, isMenuModalOpen, openGameField, closeMenuModal, setMousePosition, gameResult} = props;
 
     if (!isMenuModalOpen) return null;
 
@@ -30,11 +32,27 @@ const MenuModal = (props) => {
             <div className={modalBody}>
                 <h5 className={bodyTitle}>Hello, {playerName}!</h5>
 
+                {gameResult && (
+                    <div className={styles.gameResult}>
+                        <div className={resultItem}>Players absorbed: {gameResult.playersAbsorbed}</div>
+                        <div className={resultItem}>Orbs absorbed: {gameResult.orbsAbsorbed}</div>
+                        <div className={resultItem}>Score: {gameResult.score}</div>
+                    </div>
+                )}
+
                 <div className={bodyMenu}>
-                    <div className={bodyItem}><button className={`${bodyButton} ${bodyButtonTeam}`}>Join team!</button></div>
-                    <div className={bodyItem}><button onClick={onSoloButton} className={`${bodyButton} ${bodyButtonSolo}`}>Play solo!</button></div>
-                    <div className={bodyItem}><button className={`${bodyButton} ${bodyButtonStats}`}>See your stats</button></div>
-                    <div className={bodyItem}><button className={`${bodyButton} ${bodyButtonStats}`}>See all stats</button></div>
+                    <div className={bodyItem}>
+                        <button className={`${bodyButton} ${bodyButtonTeam}`}>Join team!</button>
+                    </div>
+                    <div className={bodyItem}>
+                        <button onClick={onSoloButton} className={`${bodyButton} ${bodyButtonSolo}`}>Play solo!</button>
+                    </div>
+                    <div className={bodyItem}>
+                        <button className={`${bodyButton} ${bodyButtonStats}`}>See your stats</button>
+                    </div>
+                    <div className={bodyItem}>
+                        <button className={`${bodyButton} ${bodyButtonStats}`}>See all stats</button>
+                    </div>
                 </div>
             </div>
 
@@ -55,7 +73,8 @@ const MenuModal = (props) => {
 
 const mapStateToProps = (state) => ({
     playerName: state.playerState.name,
-    isMenuModalOpen: state.windowState.isMenuModalOpen
+    isMenuModalOpen: state.windowState.isMenuModalOpen,
+    gameResult: state.playerState.gameResult
 });
 
 const mapDispatchToProps = (dispatch) => ({

@@ -47,18 +47,16 @@ function checkForOrbCollisions(playerData, playerConfig, orbs, options) {
     });
 }
 
-function checkForPlayerCollisions(currentPlayerData, currentPlayerConfig, players) {
+function checkForPlayerCollisions(currentPlayerData, currentPlayerConfig, players, cb) {
     const {id: currentId, locationX, locationY, radius} = currentPlayerData;
-    let {zoom} = currentPlayerConfig;
+    const {zoom} = currentPlayerConfig;
 
     return new Promise((resolve, reject) => {
         players.forEach((player, idx) => {
             const {id} = player;
 
             if (id !== currentId) {
-                let playerLocationX = player.locationX,
-                    playerLocationY = player.locationY,
-                    playerRadius = player.radius;
+                const {locationX: playerLocationX, locationY: playerLocationY, radius: playerRadius} = player;
 
                 if (locationX + radius + playerRadius > playerLocationX
                     && locationX < playerLocationX + radius + playerRadius
@@ -71,21 +69,12 @@ function checkForPlayerCollisions(currentPlayerData, currentPlayerConfig, player
                     );
 
                     if (distance < radius + playerRadius) {
-
                         if (radius > playerRadius) {
-                            let collisionData = updateScores(currentPlayerData, player);
+                            let collisionData = updateScores(currentPlayerData, player, idx);
 
-                            if (zoom > 1) zoom -= (playerRadius * 0.25) * .001;
+                            if (zoom > 1) currentPlayerConfig.zoom -= (playerRadius * 0.25) * .001;
 
-                            players.splice(idx, 1);
-
-                            resolve(collisionData);
-                        } else if (radius < playerRadius) {
-                            let collisionData = updateScores(player, currentPlayerData);
-
-                            players.forEach((player, idx) => {
-                                if (currentId === player.id) players.splice(idx, 1);
-                            });
+                            cb(player);
 
                             resolve(collisionData);
                         }
@@ -98,15 +87,16 @@ function checkForPlayerCollisions(currentPlayerData, currentPlayerConfig, player
     });
 }
 
-function updateScores(killer, killed) {
+function updateScores(killer, killed, idx) {
     killer.score += (killed.score + 10);
     killer.playersAbsorbed += 1;
     killed.alive = false;
     killer.radius += (killed.radius * 0.25);
+    killed.idx = idx;
 
     return {
         died: killed,
-        killedBy: killer,
+        killedBy: killer
     };
 }
 
